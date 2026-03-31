@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_SOCKET_URL || 
+  (import.meta.env.DEV ? 'http://localhost:3001' : 'https://YOUR_RENDER_URL_HERE');
 
 export default function Home() {
   const navigate = useNavigate();
