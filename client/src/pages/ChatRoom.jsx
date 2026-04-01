@@ -269,20 +269,15 @@ export default function ChatRoom() {
 
         <div className="chat-input-area">
           <form className="chat-input-form" onSubmit={handleSend}>
-            <button
-              type="button"
-              className="attachment-btn"
-              onClick={() => fileInputRef.current?.click()}
-              title="Attach File"
-            >
+            <label className="attachment-btn" title="Attach File" style={{ cursor: 'pointer' }}>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
               📎
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-            />
+            </label>
             <input
               id="message-input"
               type="text"
