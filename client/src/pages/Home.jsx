@@ -11,24 +11,7 @@ export default function Home() {
   const [joinCode, setJoinCode] = useState('');
   const [createError, setCreateError] = useState('');
   const [joinError, setJoinError] = useState('');
-  const [activeRooms, setActiveRooms] = useState([]);
   const [creating, setCreating] = useState(false);
-
-  // Fetch active rooms
-  useEffect(() => {
-    const fetchRooms = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/rooms`);
-        const data = await res.json();
-        setActiveRooms(data.rooms || []);
-      } catch {
-        // silently fail
-      }
-    };
-    fetchRooms();
-    const interval = setInterval(fetchRooms, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -72,13 +55,7 @@ export default function Home() {
     navigate(`/room/${code}`);
   };
 
-  const formatTimeLeft = (expiresAt) => {
-    const diff = expiresAt - Date.now();
-    if (diff <= 0) return 'Expired';
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return '< 1 min left';
-    return `${mins} min left`;
-  };
+
 
   return (
     <div className="home-container">
@@ -173,34 +150,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Active Rooms */}
-      {activeRooms.length > 0 && (
-        <div className="active-rooms">
-          <h2>
-            <span className="icon">🔥</span>
-            Active Rooms
-          </h2>
-          <div className="rooms-list">
-            {activeRooms.map((r) => (
-              <div
-                className="glass-card room-item"
-                key={r.code}
-                onClick={() => navigate(`/room/${r.code}`)}
-              >
-                <div className="room-item-info">
-                  <span className="room-item-name">{r.name}</span>
-                  <div className="room-item-meta">
-                    <span>👥 {r.userCount} online</span>
-                    <span className="dot"></span>
-                    <span>⏱ {formatTimeLeft(r.expiresAt)}</span>
-                  </div>
-                </div>
-                <button className="btn btn-secondary">Join</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

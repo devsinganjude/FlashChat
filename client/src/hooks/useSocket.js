@@ -75,6 +75,16 @@ export function useSocket() {
     socketRef.current.emit('typing', { isTyping });
   }, []);
 
+  const sendFile = useCallback((fileData, fileName, fileType) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('send-message', {
+      text: '',
+      fileData,
+      fileName,
+      fileType,
+    });
+  }, []);
+
   const socketId = socketRef.current?.id || null;
 
   return {
@@ -87,6 +97,7 @@ export function useSocket() {
     socketId,
     joinRoom,
     sendMessage,
+    sendFile,
     sendTyping,
   };
 }

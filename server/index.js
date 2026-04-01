@@ -122,22 +122,6 @@ app.get('/api/rooms/:code', (req, res) => {
   });
 });
 
-// List active rooms
-app.get('/api/rooms', (_req, res) => {
-  const active = [];
-  for (const [code, room] of rooms.entries()) {
-    const users = roomUsers.get(code) || new Map();
-    active.push({
-      code,
-      name: room.name,
-      userCount: users.size,
-      expiresAt: room.expiresAt,
-      duration: room.duration,
-    });
-  }
-  res.json({ rooms: active });
-});
-
 // ─── Socket.io ───────────────────────────────────────────────────
 io.on('connection', (socket) => {
   console.log(`[Socket] Connected: ${socket.id}`);
@@ -176,12 +160,21 @@ io.on('connection', (socket) => {
     }
 
     currentRoom = roomCode;
-    currentUser = { id: socket.id, name: userName, joinedAt: Date.now() };
+
+    let finalName = userName;
+    let counter = 1;
+    const existingNames = new Set(Array.from(users.values()).map(u => u.name));
+    while (existingNames.has(finalName)) {
+      finalName = `${userName} (${counter})`;
+      counter++;
+    }
+
+    currentUser = { id: socket.id, name: finalName, joinedAt: Date.now() };
 
     socket.join(roomCode);
     users.set(socket.id, currentUser);
 
-    const joinMsg = addSystemMessage(roomCode, `👋 ${userName} joined the room!`);
+    const joinMsg = addSystemMessage(roomCode, `👋 ${finalName} joined the room!`);
     io.to(roomCode).emit('new-message', joinMsg);
     io.to(roomCode).emit('users-update', Array.from(users.values()));
 
@@ -194,18 +187,23 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('send-message', ({ text }) => {
+  socket.on('send-message', ({ text, fileData, fileName, fileType }) => {
     if (!currentRoom || !currentUser) return;
     const room = rooms.get(currentRoom);
     if (!room || Date.now() >= room.expiresAt) return;
+
+    if (!text && !fileData) return; // ignore empty
 
     const msg = {
       id: uuidv4(),
       userId: currentUser.id,
       userName: currentUser.name,
-      text: text.trim(),
+      text: text ? text.trim() : '',
+      fileData: fileData || null,
+      fileName: fileName || null,
+      fileType: fileType || null,
       timestamp: Date.now(),
-      type: 'user',
+      type: fileData ? 'file' : 'user',
     };
 
     if (!messages.has(currentRoom)) messages.set(currentRoom, []);

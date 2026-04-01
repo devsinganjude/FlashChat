@@ -19,6 +19,7 @@ export default function ChatRoom() {
     socketId,
     joinRoom,
     sendMessage,
+    sendFile,
     sendTyping,
   } = useSocket();
 
@@ -32,6 +33,7 @@ export default function ChatRoom() {
 
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -59,6 +61,29 @@ export default function ChatRoom() {
     setInputText('');
     sendTyping(false);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File is too large. Maximum size is 5MB.');
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      sendFile(reader.result, file.name, file.type);
+      // If there is text in the input, send it as a separate message right after
+      if (inputText.trim()) {
+        sendMessage(inputText);
+        setInputText('');
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const handleInputChange = (e) => {
@@ -220,6 +245,20 @@ export default function ChatRoom() {
 
         <div className="chat-input-area">
           <form className="chat-input-form" onSubmit={handleSend}>
+            <button
+              type="button"
+              className="attachment-btn"
+              onClick={() => fileInputRef.current?.click()}
+              title="Attach File"
+            >
+              📎
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
             <input
               id="message-input"
               type="text"
