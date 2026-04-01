@@ -30,6 +30,7 @@ export default function ChatRoom() {
   const [inputText, setInputText] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -99,6 +100,14 @@ export default function ChatRoom() {
     navigator.clipboard.writeText(code).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    });
+  }, [code]);
+
+  const copyInviteLink = useCallback(() => {
+    const link = `${window.location.origin}/room/${code}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 2000);
     });
   }, [code]);
 
@@ -197,6 +206,13 @@ export default function ChatRoom() {
         <UserList users={users} currentUserId={socketId} />
 
         <div className="chat-sidebar-footer">
+          <button 
+            className="btn btn-secondary" 
+            onClick={copyInviteLink} 
+            style={{ marginBottom: '10px' }}
+          >
+            {inviteCopied ? '✓ Invite Link Copied!' : '🔗 Invite to Room'}
+          </button>
           <button className="btn btn-danger" onClick={handleLeave} id="leave-room-btn">
             🚪 Leave Room
           </button>
@@ -225,6 +241,14 @@ export default function ChatRoom() {
             </div>
           </div>
           <div className="chat-header-right">
+            <button 
+              className="btn btn-secondary" 
+              onClick={copyInviteLink} 
+              style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+              title="Copy Invite Link"
+            >
+              {inviteCopied ? '✓ Copied' : '🔗 Invite'}
+            </button>
             <RoomTimer expiresAt={room.expiresAt} />
           </div>
         </div>
