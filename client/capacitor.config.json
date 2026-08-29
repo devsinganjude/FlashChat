@@ -1,0 +1,6 @@
+{
+  "appId": "com.example.chatroom",
+  "appName": "Chatroom App",
+  "webDir": "dist",
+  "plugins": {}
+}

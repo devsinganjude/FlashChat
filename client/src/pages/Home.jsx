@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { generateSecureKey } from '../utils/crypto';
+import { Sparkles, Rocket, Link, LogIn, Moon, Sun } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
 
 const API_URL = import.meta.env.VITE_SOCKET_URL || 
   (import.meta.env.DEV ? 'http://localhost:3001' : 'https://YOUR_RENDER_URL_HERE');
@@ -12,6 +15,7 @@ export default function Home() {
   const [createError, setCreateError] = useState('');
   const [joinError, setJoinError] = useState('');
   const [creating, setCreating] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -31,7 +35,8 @@ export default function Home() {
       if (data.error) {
         setCreateError(data.error);
       } else {
-        navigate(`/room/${data.room.code}`);
+        const key = await generateSecureKey();
+        navigate(`/room/${data.room.code}#${key}`);
       }
     } catch {
       setCreateError('Failed to create room. Is the server running?');
@@ -43,16 +48,28 @@ export default function Home() {
   const handleJoin = (e) => {
     e.preventDefault();
     setJoinError('');
-    const code = joinCode.trim().toUpperCase();
-    if (!code) {
-      setJoinError('Please enter a room code.');
+    let input = joinCode.trim();
+    if (!input) {
+      setJoinError('Please enter a room code or link.');
       return;
     }
-    if (code.length !== 6) {
-      setJoinError('Room codes are 6 characters long.');
+
+    try {
+      const url = new URL(input);
+      if (url.pathname.startsWith('/room/')) {
+        navigate(url.pathname + url.hash);
+        return;
+      }
+    } catch {
+      // Not a URL
+    }
+
+    input = input.toUpperCase();
+    if (input.length !== 6) {
+      setJoinError('Invalid room code or link.');
       return;
     }
-    navigate(`/room/${code}`);
+    navigate(`/room/${input}`);
   };
 
 
@@ -60,9 +77,15 @@ export default function Home() {
   return (
     <div className="home-container">
       <header className="home-header">
-        <h1 className="home-logo">
-          Flash<span>Chat</span>
-        </h1>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px', position: 'absolute', top: 0, right: 0 }}>
+          <button className="theme-toggle-btn" onClick={toggleTheme} aria-label="Toggle theme">
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+        </div>
+        <div className="home-logo-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '8px' }}>
+          <img src={theme === 'dark' ? "/logo-dark.jpg" : "/logo-light.jpg"} alt="FlashChat Logo" style={{ width: '48px', height: '48px', borderRadius: '12px', boxShadow: 'var(--shadow-glow)' }} />
+          <h1 className="home-logo" style={{ marginBottom: 0 }}>Flash<span>Chat</span></h1>
+        </div>
         <p className="home-tagline">
           Create temporary chatrooms that disappear. No sign-up.
           No history. Just conversations.
@@ -73,7 +96,7 @@ export default function Home() {
         {/* Create Room Card */}
         <div className="glass-card home-card">
           <h2>
-            <span className="icon">✨</span>
+            <Sparkles className="icon" size={20} style={{ color: 'var(--accent-purple)' }} />
             Create a Room
           </h2>
           <p>Start a new temporary chatroom for your group.</p>
@@ -91,18 +114,19 @@ export default function Home() {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="room-duration">Duration</label>
-              <select
-                id="room-duration"
-                className="select-field"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-              >
-                <option value={5}>5 Minutes</option>
-                <option value={15}>15 Minutes</option>
-                <option value={30}>30 Minutes</option>
-                <option value={60}>1 Hour</option>
-              </select>
+              <label>Duration</label>
+              <div className="duration-options">
+                {[5, 15, 30, 60].map((val) => (
+                  <button
+                    key={val}
+                    type="button"
+                    className={`duration-btn ${Number(duration) === val ? 'active' : ''}`}
+                    onClick={() => setDuration(val)}
+                  >
+                    {val === 60 ? '1 Hour' : `${val} Mins`}
+                  </button>
+                ))}
+              </div>
             </div>
             <button
               className="btn btn-primary"
@@ -110,7 +134,7 @@ export default function Home() {
               disabled={creating}
               id="create-room-btn"
             >
-              {creating ? 'Creating…' : '🚀 Create Room'}
+              {creating ? 'Creating…' : <><Rocket size={18} /> Create Room</>}
             </button>
             {createError && <p className="error-text">{createError}</p>}
           </form>
@@ -119,7 +143,7 @@ export default function Home() {
         {/* Join Room Card */}
         <div className="glass-card home-card">
           <h2>
-            <span className="icon">🔗</span>
+            <Link className="icon" size={20} style={{ color: 'var(--accent-blue)' }} />
             Join a Room
           </h2>
           <p>Enter a room code to join an existing conversation.</p>
@@ -143,7 +167,7 @@ export default function Home() {
               id="join-room-btn"
               style={{ marginTop: 'auto' }}
             >
-              🚪 Join Room
+              <LogIn size={18} /> Join Room
             </button>
             {joinError && <p className="error-text">{joinError}</p>}
           </form>

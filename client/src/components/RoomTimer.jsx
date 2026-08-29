@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Clock } from 'lucide-react';
 
 export default function RoomTimer({ expiresAt }) {
   const [remaining, setRemaining] = useState('');
@@ -39,7 +40,7 @@ export default function RoomTimer({ expiresAt }) {
 
   return (
     <div className={`room-timer ${status}`}>
-      <span className="timer-icon">⏱</span>
+      <Clock className="timer-icon" size={16} />
       <span>{remaining}</span>
     </div>
   );

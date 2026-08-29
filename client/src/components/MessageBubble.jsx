@@ -1,7 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Download, Flame } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-export default function MessageBubble({ message, isOwn }) {
-  const { type, userName, text, timestamp, fileData, fileName, fileType } = message;
+const QUICK_EMOJIS = ['👍', '❤️', '😂', '🔥', '👀', '🚀'];
+
+export default function MessageBubble({ message, isOwn, addReaction }) {
+  const { id, type, userName, text, timestamp, fileData, fileName, fileType, isGhost, reactions } = message;
+  const [isBurned, setIsBurned] = useState(false);
+  const [isBurning, setIsBurning] = useState(false);
+  
+  useEffect(() => {
+    if (isGhost && !isBurned) {
+      // 10 seconds total: 8s normal, 2s burning animation
+      const burnAnimTimer = setTimeout(() => {
+        setIsBurning(true);
+      }, 8000);
+      
+      const burnTimer = setTimeout(() => {
+        setIsBurned(true);
+        setIsBurning(false);
+      }, 10000);
+      
+      return () => {
+        clearTimeout(burnAnimTimer);
+        clearTimeout(burnTimer);
+      };
+    }
+  }, [isGhost, isBurned]);
 
   if (type === 'system') {
     return (
@@ -16,30 +44,120 @@ export default function MessageBubble({ message, isOwn }) {
     minute: '2-digit',
   });
 
+  const handleReactionClick = (emoji) => {
+    addReaction(id, emoji);
+  };
+
   const renderContent = () => {
+    if (isGhost && isBurned) {
+      return (
+        <div className="message-bubble ghost-burned">
+          <Flame size={16} className="burn-icon" /> 
+          Message expired
+        </div>
+      );
+    }
+
     if (type === 'file') {
       if (fileType?.startsWith('image/')) {
         return (
-          <div className="message-bubble file-bubble">
+          <div className={`message-bubble file-bubble ${isBurning ? 'burning' : ''}`}>
+            {isGhost && <div className="ghost-indicator"><Flame size={14}/> Ghost Message</div>}
             <img src={fileData} alt={fileName} className="message-image" />
           </div>
         );
       }
+      if (fileType?.startsWith('video/')) {
+        return (
+          <div className={`message-bubble file-bubble ${isBurning ? 'burning' : ''}`}>
+             {isGhost && <div className="ghost-indicator"><Flame size={14}/> Ghost Message</div>}
+            <video src={fileData} controls className="message-video" />
+          </div>
+        );
+      }
       return (
-        <div className="message-bubble file-bubble">
-          <a href={fileData} download={fileName} className="file-download">
-            📎 Download {fileName}
+        <div className={`message-bubble file-bubble ${isBurning ? 'burning' : ''}`}>
+           {isGhost && <div className="ghost-indicator"><Flame size={14}/> Ghost Message</div>}
+          <a href={fileData} download={fileName} className="file-download" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Download size={16} /> Download {fileName}
           </a>
         </div>
       );
     }
-    return <div className="message-bubble">{text}</div>;
+    
+    // Markdown Text
+    return (
+      <div className={`message-bubble ${isBurning ? 'burning' : ''} ${isGhost ? 'ghost-bubble' : ''}`}>
+        {isGhost && <div className="ghost-indicator"><Flame size={14}/> Ghost Message</div>}
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            code({node, inline, className, children, ...props}) {
+              const match = /language-(\w+)/.exec(className || '')
+              return !inline && match ? (
+                <SyntaxHighlighter
+                  {...props}
+                  children={String(children).replace(/\n$/, '')}
+                  style={vscDarkPlus}
+                  language={match[1]}
+                  PreTag="div"
+                  className="code-block"
+                />
+              ) : (
+                <code {...props} className="inline-code">
+                  {children}
+                </code>
+              )
+            }
+          }}
+        >
+          {text}
+        </ReactMarkdown>
+      </div>
+    );
   };
 
+  // Render reactions list
+  const reactionEntries = reactions ? Object.entries(reactions) : [];
+
   return (
-    <div className={`message-wrapper ${isOwn ? 'own' : 'other'}`}>
+    <div className={`message-wrapper ${isOwn ? 'own' : 'other'} ${isGhost && isBurned ? 'burned-wrapper' : ''}`}>
       {!isOwn && <span className="message-sender">{userName}</span>}
-      {renderContent()}
+      
+      <div className="message-content-wrapper">
+        {renderContent()}
+        
+        {/* Quick Reactions Menu */}
+        {!isBurned && (
+          <div className="reaction-menu">
+            {QUICK_EMOJIS.map(emoji => (
+              <button 
+                key={emoji} 
+                onClick={() => handleReactionClick(emoji)}
+                className="reaction-btn"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Active Reactions */}
+      {reactionEntries.length > 0 && !isBurned && (
+        <div className="message-reactions">
+          {reactionEntries.map(([emoji, users]) => (
+            <button 
+              key={emoji} 
+              className={`reaction-badge ${users.includes('me') ? 'reacted' : ''}`} // Note: To make 'reacted' exact we need current user ID, but this is simple version
+              onClick={() => handleReactionClick(emoji)}
+            >
+              {emoji} {users.length}
+            </button>
+          ))}
+        </div>
+      )}
+
       <span className="message-time">{time}</span>
     </div>
   );

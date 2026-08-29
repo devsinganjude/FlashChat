@@ -187,7 +187,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('send-message', ({ text, fileData, fileName, fileType }) => {
+  socket.on('send-message', ({ text, fileData, fileName, fileType, isGhost }) => {
     if (!currentRoom || !currentUser) return;
     const room = rooms.get(currentRoom);
     if (!room || Date.now() >= room.expiresAt) return;
@@ -202,6 +202,8 @@ io.on('connection', (socket) => {
       fileData: fileData || null,
       fileName: fileName || null,
       fileType: fileType || null,
+      isGhost: !!isGhost,
+      reactions: {}, // { emoji: [userIds] }
       timestamp: Date.now(),
       type: fileData ? 'file' : 'user',
     };
@@ -210,6 +212,40 @@ io.on('connection', (socket) => {
     messages.get(currentRoom).push(msg);
 
     io.to(currentRoom).emit('new-message', msg);
+  });
+
+  socket.on('add-reaction', ({ messageId, emoji }) => {
+    if (!currentRoom || !currentUser) return;
+    const history = messages.get(currentRoom);
+    if (!history) return;
+
+    const msgIndex = history.findIndex(m => m.id === messageId);
+    if (msgIndex === -1) return;
+
+    const msg = history[msgIndex];
+    if (!msg.reactions) msg.reactions = {};
+
+    const hadSameReaction = msg.reactions[emoji] && msg.reactions[emoji].includes(currentUser.id);
+
+    // Remove user from ALL reactions on this message
+    for (const [e, users] of Object.entries(msg.reactions)) {
+      const idx = users.indexOf(currentUser.id);
+      if (idx > -1) {
+        users.splice(idx, 1);
+        if (users.length === 0) delete msg.reactions[e];
+      }
+    }
+
+    // If they didn't just have the same reaction, add the new one
+    if (!hadSameReaction) {
+      if (!msg.reactions[emoji]) msg.reactions[emoji] = [];
+      msg.reactions[emoji].push(currentUser.id);
+    }
+
+    io.to(currentRoom).emit('reaction-updated', {
+      messageId,
+      reactions: msg.reactions,
+    });
   });
 
   socket.on('typing', ({ isTyping }) => {

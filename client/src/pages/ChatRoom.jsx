@@ -5,6 +5,8 @@ import MessageBubble from '../components/MessageBubble';
 import UserList from '../components/UserList';
 import RoomTimer from '../components/RoomTimer';
 import TypingIndicator from '../components/TypingIndicator';
+import { Hand, MessageSquare, Loader2, Clock, Home, Users, Copy, Link, Check, LogOut, SendHorizontal, Plus, Ghost, Sun, Moon, Menu } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
 
 export default function ChatRoom() {
   const { code } = useParams();
@@ -17,11 +19,13 @@ export default function ChatRoom() {
     typingUsers,
     isExpired,
     socketId,
+    isSecure,
     joinRoom,
     sendMessage,
     sendFile,
     sendTyping,
-  } = useSocket();
+    addReaction,
+  } = useSocket(window.location.hash.substring(1));
 
   const [nickname, setNickname] = useState('');
   const [showNicknameModal, setShowNicknameModal] = useState(true);
@@ -31,6 +35,8 @@ export default function ChatRoom() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [isGhostMode, setIsGhostMode] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -58,7 +64,7 @@ export default function ChatRoom() {
   const handleSend = (e) => {
     e.preventDefault();
     if (!inputText.trim()) return;
-    sendMessage(inputText);
+    sendMessage(inputText, isGhostMode);
     setInputText('');
     sendTyping(false);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -79,7 +85,7 @@ export default function ChatRoom() {
       sendFile(reader.result, file.name, file.type);
       // If there is text in the input, send it as a separate message right after
       if (inputText.trim()) {
-        sendMessage(inputText);
+        sendMessage(inputText, isGhostMode);
         setInputText('');
       }
     };
@@ -120,7 +126,10 @@ export default function ChatRoom() {
     return (
       <div className="modal-overlay">
         <div className="glass-card modal">
-          <h2>👋 Enter your nickname</h2>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Hand className="icon" size={24} style={{ color: 'var(--accent-orange)' }} /> 
+            Enter your nickname
+          </h2>
           <p>Choose a display name for this chat session. This won't be saved anywhere.</p>
           <form onSubmit={handleJoin}>
             <div className="form-group">
@@ -141,7 +150,7 @@ export default function ChatRoom() {
               disabled={!nickname.trim() || !isConnected}
               id="join-btn"
             >
-              {isConnected ? '🎉 Join Chat' : '⏳ Connecting...'}
+              {isConnected ? <><MessageSquare size={18} /> Join Chat</> : <><Loader2 className="spinner" size={18} style={{ animation: 'spin 2s linear infinite' }} /> Connecting...</>}
             </button>
             {joinError && <p className="error-text">{joinError}</p>}
           </form>
@@ -155,11 +164,11 @@ export default function ChatRoom() {
     return (
       <div className="expired-overlay">
         <div className="glass-card expired-card">
-          <div className="icon">⏰</div>
+          <div className="icon"><Clock size={48} style={{ color: 'var(--text-muted)' }} /></div>
           <h2>Room Expired</h2>
           <p>This chatroom has expired and all messages have been deleted. Thanks for chatting!</p>
           <button className="btn btn-primary" onClick={handleLeave} id="go-home-btn">
-            🏠 Back to Home
+            <Home size={18} /> Back to Home
           </button>
         </div>
       </div>
@@ -198,7 +207,7 @@ export default function ChatRoom() {
             onClick={copyCode}
             title="Click to copy"
           >
-            📋 {code}
+            <Copy size={14} style={{ flexShrink: 0 }} /> {code}
             {copied && <span className="copied-text">Copied!</span>}
           </div>
         </div>
@@ -211,10 +220,10 @@ export default function ChatRoom() {
             onClick={copyInviteLink} 
             style={{ marginBottom: '10px' }}
           >
-            {inviteCopied ? '✓ Invite Link Copied!' : '🔗 Invite to Room'}
+            {inviteCopied ? <><Check size={16} /> Invite Link Copied!</> : <><Link size={16} /> Invite to Room</>}
           </button>
           <button className="btn btn-danger" onClick={handleLeave} id="leave-room-btn">
-            🚪 Leave Room
+            <LogOut size={16} /> Leave Room
           </button>
         </div>
       </aside>
@@ -228,28 +237,30 @@ export default function ChatRoom() {
               onClick={() => setSidebarOpen(!sidebarOpen)}
               id="mobile-menu-btn"
             >
-              ☰
+              <Menu size={24} />
             </button>
-            <h1>{room.name}</h1>
-            <div
-              className="room-code-badge"
-              onClick={copyCode}
-              title="Click to copy"
-              style={{ display: 'none' }}
-            >
-              {code}
+            <div className="room-info-container">
+              <h2 className="room-title">
+                <span className="room-name-text">{room.name}</span>
+                <span className="room-code">#{room.code}</span>
+              </h2>
+              <div className="room-meta">
+                <p className="room-subtitle">
+                  <Users size={14} /> {users.length} online
+                </p>
+                {isSecure && (
+                  <span className="e2ee-badge">
+                    <span role="img" aria-label="encrypted">🔒</span> <span className="e2ee-text">Encrypted</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="chat-header-right">
-            <button 
-              className="btn btn-secondary" 
-              onClick={copyInviteLink} 
-              style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-              title="Copy Invite Link"
-            >
-              {inviteCopied ? '✓ Copied' : '🔗 Invite'}
-            </button>
             <RoomTimer expiresAt={room.expiresAt} />
+            <button className="theme-toggle-btn chat-theme-btn" onClick={toggleTheme} aria-label="Toggle theme">
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
           </div>
         </div>
 
@@ -259,6 +270,7 @@ export default function ChatRoom() {
               key={msg.id}
               message={msg}
               isOwn={msg.userId === socketId}
+              addReaction={addReaction}
             />
           ))}
           {otherTyping.length > 0 && (
@@ -267,34 +279,46 @@ export default function ChatRoom() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="chat-input-area">
-          <form className="chat-input-form" onSubmit={handleSend}>
-            <label className="attachment-btn" title="Attach File" style={{ cursor: 'pointer' }}>
+        <div className="chat-input-area floating">
+          <form className="chat-input-container" onSubmit={handleSend}>
+            <label className="icon-action-btn" title="Attach File" style={{ cursor: 'pointer' }}>
               <input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
               />
-              📎
+              <Plus size={24} />
             </label>
-            <input
-              id="message-input"
-              type="text"
-              placeholder="Type a message…"
-              value={inputText}
-              onChange={handleInputChange}
-              autoFocus
-              autoComplete="off"
-            />
-            <button
-              className="send-btn"
-              type="submit"
-              disabled={!inputText.trim()}
-              id="send-message-btn"
-            >
-              ➤
-            </button>
+            
+            <div className="chat-input-pill">
+              <input
+                id="message-input"
+                className="chat-input"
+                type="text"
+                placeholder="Type a message..."
+                value={inputText}
+                onChange={handleInputChange}
+                autoFocus
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                className={`icon-action-btn ghost-btn ${isGhostMode ? 'active' : ''}`}
+                onClick={() => setIsGhostMode(!isGhostMode)}
+                title={isGhostMode ? 'Ghost Mode ON (Messages burn in 10s)' : 'Turn on Ghost Mode'}
+              >
+                <Ghost size={20} />
+              </button>
+              <button
+                className="send-pill-btn"
+                type="submit"
+                disabled={!inputText.trim()}
+                id="send-message-btn"
+              >
+                Send <SendHorizontal size={16} />
+              </button>
+            </div>
           </form>
         </div>
       </main>
