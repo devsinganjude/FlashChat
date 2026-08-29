@@ -201,6 +201,10 @@ export default function ChatRoom() {
       {/* Sidebar */}
       <aside className={`chat-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="chat-sidebar-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <img src={theme === 'dark' ? "/logo-dark.jpg" : "/logo-light.jpg"} alt="FlashChat Logo" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+            <h1 className="home-logo" style={{ fontSize: '1.25rem', margin: 0 }}>Flash<span>Chat</span></h1>
+          </div>
           <h2>{room.name}</h2>
           <div
             className="room-code-badge"
