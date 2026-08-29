@@ -36,14 +36,19 @@ export function useSocket(secretKeyHash = '') {
 
     socket.on('new-message', async (msg) => {
       let finalMsg = { ...msg };
-      if (cryptoKeyRef.current) {
-        if (finalMsg.text) {
-          const dec = await decryptMessage(finalMsg.text, cryptoKeyRef.current);
-          finalMsg.text = dec || '🔒 [Encrypted Message]';
-        }
-        if (finalMsg.fileData) {
-          const dec = await decryptMessage(finalMsg.fileData, cryptoKeyRef.current);
-          finalMsg.fileData = dec; // if null, image will break, which is correct for failed decryption
+      if (finalMsg.isEncrypted) {
+        if (cryptoKeyRef.current) {
+          if (finalMsg.text) {
+            const dec = await decryptMessage(finalMsg.text, cryptoKeyRef.current);
+            finalMsg.text = dec || '🔒 [Encrypted Message]';
+          }
+          if (finalMsg.fileData) {
+            const dec = await decryptMessage(finalMsg.fileData, cryptoKeyRef.current);
+            finalMsg.fileData = dec; // if null, image will break, which is correct for failed decryption
+          }
+        } else {
+          finalMsg.text = '🔒 [Encrypted Message]';
+          if (finalMsg.fileData) finalMsg.fileData = null;
         }
       }
       setMessages((prev) => [...prev, finalMsg]);
@@ -93,14 +98,19 @@ export function useSocket(secretKeyHash = '') {
           const decryptedMessages = [];
           for (let msg of (response.messages || [])) {
             let finalMsg = { ...msg };
-            if (cryptoKeyRef.current) {
-              if (finalMsg.text) {
-                const dec = await decryptMessage(finalMsg.text, cryptoKeyRef.current);
-                finalMsg.text = dec || '🔒 [Encrypted Message]';
-              }
-              if (finalMsg.fileData) {
-                const dec = await decryptMessage(finalMsg.fileData, cryptoKeyRef.current);
-                finalMsg.fileData = dec;
+            if (finalMsg.isEncrypted) {
+              if (cryptoKeyRef.current) {
+                if (finalMsg.text) {
+                  const dec = await decryptMessage(finalMsg.text, cryptoKeyRef.current);
+                  finalMsg.text = dec || '🔒 [Encrypted Message]';
+                }
+                if (finalMsg.fileData) {
+                  const dec = await decryptMessage(finalMsg.fileData, cryptoKeyRef.current);
+                  finalMsg.fileData = dec;
+                }
+              } else {
+                finalMsg.text = '🔒 [Encrypted Message]';
+                if (finalMsg.fileData) finalMsg.fileData = null;
               }
             }
             decryptedMessages.push(finalMsg);
@@ -119,11 +129,13 @@ export function useSocket(secretKeyHash = '') {
     if (!socketRef.current || !text.trim()) return;
     
     let payloadText = text.trim();
+    let isEncrypted = false;
     if (cryptoKeyRef.current) {
       payloadText = await encryptMessage(payloadText, cryptoKeyRef.current);
+      isEncrypted = true;
     }
     
-    socketRef.current.emit('send-message', { text: payloadText, isGhost });
+    socketRef.current.emit('send-message', { text: payloadText, isGhost, isEncrypted });
   }, []);
 
   const sendTyping = useCallback((isTyping) => {
@@ -135,8 +147,10 @@ export function useSocket(secretKeyHash = '') {
     if (!socketRef.current) return;
     
     let payloadFile = fileData;
+    let isEncrypted = false;
     if (cryptoKeyRef.current) {
       payloadFile = await encryptMessage(fileData, cryptoKeyRef.current);
+      isEncrypted = true;
     }
     
     socketRef.current.emit('send-message', {
@@ -144,6 +158,7 @@ export function useSocket(secretKeyHash = '') {
       fileData: payloadFile,
       fileName,
       fileType,
+      isEncrypted
     });
   }, []);
 

@@ -187,7 +187,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('send-message', ({ text, fileData, fileName, fileType, isGhost }) => {
+  socket.on('send-message', ({ text, fileData, fileName, fileType, isGhost, isEncrypted }) => {
     if (!currentRoom || !currentUser) return;
     const room = rooms.get(currentRoom);
     if (!room || Date.now() >= room.expiresAt) return;
@@ -203,6 +203,7 @@ io.on('connection', (socket) => {
       fileName: fileName || null,
       fileType: fileType || null,
       isGhost: !!isGhost,
+      isEncrypted: !!isEncrypted,
       reactions: {}, // { emoji: [userIds] }
       timestamp: Date.now(),
       type: fileData ? 'file' : 'user',

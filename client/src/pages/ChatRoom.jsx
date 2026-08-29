@@ -110,7 +110,7 @@ export default function ChatRoom() {
   }, [code]);
 
   const copyInviteLink = useCallback(() => {
-    const link = `${window.location.origin}/room/${code}`;
+    const link = `${window.location.origin}/room/${code}${window.location.hash}`;
     navigator.clipboard.writeText(link).then(() => {
       setInviteCopied(true);
       setTimeout(() => setInviteCopied(false), 2000);
