@@ -6,11 +6,19 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '🔥', '👀', '🚀'];
+const EXTENDED_EMOJIS = [
+  '👍', '❤️', '😂', '🔥', '👀', '🚀', 
+  '💯', '✨', '🎉', '🙌', '👏', '🙏', 
+  '😢', '😡', '🤔', '🤯', '💀', '👽',
+  '😭', '🥺', '😎', '🤓', '🤡', '💩'
+];
 
-export default function MessageBubble({ message, isOwn, addReaction }) {
+export default function MessageBubble({ message, isOwn, addReaction, roomUsers, currentUserId }) {
   const { id, type, userName, text, timestamp, fileData, fileName, fileType, isGhost, reactions } = message;
   const [isBurned, setIsBurned] = useState(false);
   const [isBurning, setIsBurning] = useState(false);
+  const [showExtendedEmojis, setShowExtendedEmojis] = useState(false);
+  const [showReactorsFor, setShowReactorsFor] = useState(null);
   
   useEffect(() => {
     if (isGhost && !isBurned) {
@@ -129,16 +137,32 @@ export default function MessageBubble({ message, isOwn, addReaction }) {
         
         {/* Quick Reactions Menu */}
         {!isBurned && (
-          <div className="reaction-menu">
-            {QUICK_EMOJIS.map(emoji => (
+          <div className={`reaction-menu ${showExtendedEmojis ? 'extended' : ''}`}>
+            {(showExtendedEmojis ? EXTENDED_EMOJIS : QUICK_EMOJIS).map(emoji => (
               <button 
                 key={emoji} 
-                onClick={() => handleReactionClick(emoji)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleReactionClick(emoji);
+                  setShowExtendedEmojis(false);
+                }}
                 className="reaction-btn"
               >
                 {emoji}
               </button>
             ))}
+            {!showExtendedEmojis && (
+              <button 
+                className="reaction-btn custom-emoji-btn" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowExtendedEmojis(true);
+                }}
+                title="More emojis"
+              >
+                +
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -146,15 +170,31 @@ export default function MessageBubble({ message, isOwn, addReaction }) {
       {/* Active Reactions */}
       {reactionEntries.length > 0 && !isBurned && (
         <div className="message-reactions">
-          {reactionEntries.map(([emoji, users]) => (
-            <button 
-              key={emoji} 
-              className={`reaction-badge ${users.includes('me') ? 'reacted' : ''}`} // Note: To make 'reacted' exact we need current user ID, but this is simple version
-              onClick={() => handleReactionClick(emoji)}
-            >
-              {emoji} {users.length}
-            </button>
-          ))}
+          {reactionEntries.map(([emoji, userIds]) => {
+            const hasReacted = userIds.includes(currentUserId);
+            const reactorNames = userIds.map(uid => {
+              if (uid === currentUserId) return 'You';
+              const u = roomUsers?.find(user => user.id === uid);
+              return u ? u.name : 'Someone';
+            }).join(', ');
+            
+            return (
+              <div key={emoji} className="reaction-badge-container" style={{ position: 'relative' }}>
+                <button 
+                  className={`reaction-badge ${hasReacted ? 'reacted' : ''}`}
+                  onClick={() => setShowReactorsFor(showReactorsFor === emoji ? null : emoji)}
+                  title={reactorNames}
+                >
+                  {emoji} {userIds.length}
+                </button>
+                {showReactorsFor === emoji && (
+                  <div className="reactors-tooltip">
+                    {reactorNames}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

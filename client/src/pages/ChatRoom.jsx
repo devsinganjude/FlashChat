@@ -275,6 +275,8 @@ export default function ChatRoom() {
               message={msg}
               isOwn={msg.userId === socketId}
               addReaction={addReaction}
+              roomUsers={users}
+              currentUserId={socketId}
             />
           ))}
           {otherTyping.length > 0 && (
@@ -314,15 +316,15 @@ export default function ChatRoom() {
               >
                 <Ghost size={20} />
               </button>
-              <button
-                className="send-pill-btn"
-                type="submit"
-                disabled={!inputText.trim()}
-                id="send-message-btn"
-              >
-                Send <SendHorizontal size={16} />
-              </button>
             </div>
+            <button
+              className="send-pill-btn"
+              type="submit"
+              disabled={!inputText.trim()}
+              id="send-message-btn"
+            >
+              <span className="send-text">Send</span> <SendHorizontal size={16} />
+            </button>
           </form>
         </div>
       </main>
