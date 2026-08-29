@@ -1146,6 +1146,21 @@ input, textarea {
     width: 38px;
     height: 38px;
   }
+  
+  .reaction-btn {
+    font-size: 1.5rem;
+    padding: 6px;
+  }
+  
+  .reaction-menu {
+    top: -44px;
+  }
+  
+  .reaction-menu.extended {
+    width: 280px;
+    gap: 8px;
+    padding: 8px;
+  }
 }
 
 /* ─── Loading State ─────────────────────────────────────────── */
@@ -1390,7 +1405,8 @@ input, textarea {
   left: 0;
 }
 
-.message-wrapper:hover .reaction-menu {
+.message-wrapper:hover .reaction-menu,
+.reaction-menu.extended {
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;

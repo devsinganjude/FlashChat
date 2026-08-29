@@ -39,6 +39,7 @@ export default function ChatRoom() {
   const { theme, toggleTheme } = useTheme();
 
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -68,6 +69,11 @@ export default function ChatRoom() {
     setInputText('');
     sendTyping(false);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    
+    // Refocus input to keep mobile keyboard open
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
   };
 
   const handleFileChange = (e) => {
@@ -299,6 +305,7 @@ export default function ChatRoom() {
             
             <div className="chat-input-pill">
               <input
+                ref={inputRef}
                 id="message-input"
                 className="chat-input"
                 type="text"
