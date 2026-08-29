@@ -88,7 +88,7 @@ export default function ChatRoom() {
 
     const reader = new FileReader();
     reader.onload = () => {
-      sendFile(reader.result, file.name, file.type);
+      sendFile(reader.result, file.name, file.type, isGhostMode);
       // If there is text in the input, send it as a separate message right after
       if (inputText.trim()) {
         sendMessage(inputText, isGhostMode);

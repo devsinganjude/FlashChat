@@ -1,0 +1,23 @@
+{
+  "name": "FlashChat",
+  "short_name": "FlashChat",
+  "description": "Create temporary chatrooms for instant, ephemeral conversations. No sign-up required.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#C5A059",
+  "icons": [
+    {
+      "src": "/logo-dark.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-dark.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
