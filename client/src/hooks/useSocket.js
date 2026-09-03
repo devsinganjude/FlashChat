@@ -143,7 +143,7 @@ export function useSocket(secretKeyHash = '') {
     socketRef.current.emit('typing', { isTyping });
   }, []);
 
-  const sendFile = useCallback(async (fileData, fileName, fileType) => {
+  const sendFile = useCallback(async (fileData, fileName, fileType, isGhost) => {
     if (!socketRef.current) return;
     
     let payloadFile = fileData;
@@ -158,7 +158,8 @@ export function useSocket(secretKeyHash = '') {
       fileData: payloadFile,
       fileName,
       fileType,
-      isEncrypted
+      isEncrypted,
+      isGhost
     });
   }, []);
 

@@ -50,7 +50,7 @@ function cleanupRoom(code) {
   if (!room) return;
 
   // Notify everyone in the room
-  const msg = addSystemMessage(code, '⏰ This room has expired. Thanks for chatting!');
+  const msg = addSystemMessage(code, 'This room has expired. Thanks for chatting!');
   io.to(code).emit('new-message', msg);
   io.to(code).emit('room-expired');
 
@@ -103,7 +103,7 @@ app.post('/api/rooms', (req, res) => {
   messages.set(code, []);
   roomUsers.set(code, new Map());
 
-  addSystemMessage(code, `🎉 Room "${room.name}" created! It will expire in ${duration} minute${duration > 1 ? 's' : ''}.`);
+  addSystemMessage(code, `Room "${room.name}" created! It will expire in ${duration} minute${duration > 1 ? 's' : ''}.`);
 
   console.log(`[Room] Created: ${code} — "${room.name}" (${duration} min)`);
   res.json({ room });
@@ -154,7 +154,7 @@ io.on('connection', (socket) => {
       const prevUsers = roomUsers.get(currentRoom);
       if (prevUsers) {
         prevUsers.delete(socket.id);
-        const leaveMsg = addSystemMessage(currentRoom, `👋 ${currentUser?.name || 'Someone'} left the room.`);
+        const leaveMsg = addSystemMessage(currentRoom, `${currentUser?.name || 'Someone'} left the room.`);
         io.to(currentRoom).emit('new-message', leaveMsg);
         io.to(currentRoom).emit('users-update', Array.from(prevUsers.values()));
       }
@@ -175,7 +175,7 @@ io.on('connection', (socket) => {
     socket.join(roomCode);
     users.set(socket.id, currentUser);
 
-    const joinMsg = addSystemMessage(roomCode, `👋 ${finalName} joined the room!`);
+    const joinMsg = addSystemMessage(roomCode, `${finalName} joined the room!`);
     io.to(roomCode).emit('new-message', joinMsg);
     io.to(roomCode).emit('users-update', Array.from(users.values()));
 

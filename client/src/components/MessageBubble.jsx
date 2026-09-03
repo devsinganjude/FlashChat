@@ -13,12 +13,21 @@ const EXTENDED_EMOJIS = [
   '😭', '🥺', '😎', '🤓', '🤡', '💩'
 ];
 
-export default function MessageBubble({ message, isOwn, addReaction, roomUsers, currentUserId }) {
+export default React.memo(function MessageBubble({ message, isOwn, addReaction, roomUsers, currentUserId }) {
   const { id, type, userName, text, timestamp, fileData, fileName, fileType, isGhost, reactions } = message;
   const [isBurned, setIsBurned] = useState(false);
   const [isBurning, setIsBurning] = useState(false);
   const [showExtendedEmojis, setShowExtendedEmojis] = useState(false);
   const [showReactorsFor, setShowReactorsFor] = useState(null);
+
+  // Close extended emojis when clicking anywhere else
+  useEffect(() => {
+    if (showExtendedEmojis) {
+      const handleClickOutside = () => setShowExtendedEmojis(false);
+      window.addEventListener('click', handleClickOutside);
+      return () => window.removeEventListener('click', handleClickOutside);
+    }
+  }, [showExtendedEmojis]);
   
   useEffect(() => {
     if (isGhost && !isBurned) {
@@ -71,7 +80,12 @@ export default function MessageBubble({ message, isOwn, addReaction, roomUsers, 
         return (
           <div className={`message-bubble file-bubble ${isBurning ? 'burning' : ''}`}>
             {isGhost && <div className="ghost-indicator"><Flame size={14}/> Ghost Message</div>}
-            <img src={fileData} alt={fileName} className="message-image" />
+            <div className="media-container" style={{ position: 'relative', display: 'inline-block' }}>
+              <img src={fileData} alt={fileName} className="message-image" />
+              <a href={fileData} download={fileName} className="media-download-btn" title="Download Image">
+                <Download size={16} />
+              </a>
+            </div>
           </div>
         );
       }
@@ -79,7 +93,12 @@ export default function MessageBubble({ message, isOwn, addReaction, roomUsers, 
         return (
           <div className={`message-bubble file-bubble ${isBurning ? 'burning' : ''}`}>
              {isGhost && <div className="ghost-indicator"><Flame size={14}/> Ghost Message</div>}
-            <video src={fileData} controls className="message-video" />
+            <div className="media-container" style={{ position: 'relative', display: 'inline-block' }}>
+              <video src={fileData} controls className="message-video" />
+              <a href={fileData} download={fileName} className="media-download-btn" title="Download Video">
+                <Download size={16} />
+              </a>
+            </div>
           </div>
         );
       }
@@ -201,4 +220,4 @@ export default function MessageBubble({ message, isOwn, addReaction, roomUsers, 
       <span className="message-time">{time}</span>
     </div>
   );
-}
+});

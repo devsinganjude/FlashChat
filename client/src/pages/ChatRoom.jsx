@@ -33,7 +33,6 @@ export default function ChatRoom() {
   const [joinError, setJoinError] = useState('');
   const [inputText, setInputText] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [isGhostMode, setIsGhostMode] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -41,6 +40,7 @@ export default function ChatRoom() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
   const fileInputRef = useRef(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -68,6 +68,7 @@ export default function ChatRoom() {
     sendMessage(inputText, isGhostMode);
     setInputText('');
     sendTyping(false);
+    isTypingRef.current = false;
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     
     // Refocus input to keep mobile keyboard open
@@ -101,19 +102,18 @@ export default function ChatRoom() {
 
   const handleInputChange = (e) => {
     setInputText(e.target.value);
-    sendTyping(true);
+    
+    if (!isTypingRef.current) {
+      sendTyping(true);
+      isTypingRef.current = true;
+    }
+    
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       sendTyping(false);
+      isTypingRef.current = false;
     }, 2000);
   };
-
-  const copyCode = useCallback(() => {
-    navigator.clipboard.writeText(code).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }, [code]);
 
   const copyInviteLink = useCallback(() => {
     const link = `${window.location.origin}/room/${code}${window.location.hash}`;
@@ -211,27 +211,19 @@ export default function ChatRoom() {
             <img src={theme === 'dark' ? "/logo-dark.jpg" : "/logo-light.jpg"} alt="FlashChat Logo" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
             <h1 className="home-logo" style={{ fontSize: '1.25rem', margin: 0 }}>Flash<span>Chat</span></h1>
           </div>
-          <h2>{room.name}</h2>
-          <div
-            className="room-code-badge"
-            onClick={copyCode}
-            title="Click to copy"
+          <h2 className="room-title-gradient">{room.name}</h2>
+          <button 
+            className="invite-link-btn" 
+            onClick={copyInviteLink} 
+            title="Click to copy secure link"
           >
-            <Copy size={14} style={{ flexShrink: 0 }} /> {code}
-            {copied && <span className="copied-text">Copied!</span>}
-          </div>
+            {inviteCopied ? <><Check size={14} /> Link Copied!</> : <><Link size={14} /> Copy Invite Link</>}
+          </button>
         </div>
 
         <UserList users={users} currentUserId={socketId} />
 
         <div className="chat-sidebar-footer">
-          <button 
-            className="btn btn-secondary" 
-            onClick={copyInviteLink} 
-            style={{ marginBottom: '10px' }}
-          >
-            {inviteCopied ? <><Check size={16} /> Invite Link Copied!</> : <><Link size={16} /> Invite to Room</>}
-          </button>
           <button className="btn btn-danger" onClick={handleLeave} id="leave-room-btn">
             <LogOut size={16} /> Leave Room
           </button>

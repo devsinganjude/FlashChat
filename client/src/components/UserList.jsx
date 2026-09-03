@@ -18,7 +18,7 @@ function getInitial(name) {
   return name.charAt(0).toUpperCase();
 }
 
-export default function UserList({ users, currentUserId }) {
+export default React.memo(function UserList({ users, currentUserId }) {
   return (
     <div className="chat-sidebar-users">
       <h3>Online — {users.length}</h3>
@@ -29,6 +29,7 @@ export default function UserList({ users, currentUserId }) {
             style={{ background: getColor(user.name) }}
           >
             {getInitial(user.name)}
+            <div className="online-dot" title="Online" />
           </div>
           <span className="user-name">
             {user.name}
@@ -40,4 +41,4 @@ export default function UserList({ users, currentUserId }) {
       ))}
     </div>
   );
-}
+});

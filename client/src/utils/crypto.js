@@ -51,7 +51,15 @@ export const encryptMessage = async (text, cryptoKey) => {
     const combined = new Uint8Array(iv.length + encrypted.byteLength);
     combined.set(iv, 0);
     combined.set(new Uint8Array(encrypted), iv.length);
-    return btoa(String.fromCharCode(...combined));
+    
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        resolve(dataUrl.substring(dataUrl.indexOf(',') + 1));
+      };
+      reader.readAsDataURL(new Blob([combined]));
+    });
   } catch (error) {
     console.error("Encryption failed:", error);
     return null;

@@ -50,26 +50,20 @@ export default function Home() {
     setJoinError('');
     let input = joinCode.trim();
     if (!input) {
-      setJoinError('Please enter a room code or link.');
+      setJoinError('Please enter an invite link.');
       return;
     }
 
     try {
       const url = new URL(input);
-      if (url.pathname.startsWith('/room/')) {
+      if (url.pathname.startsWith('/room/') && url.hash && url.hash.length > 5) {
         navigate(url.pathname + url.hash);
         return;
       }
+      setJoinError('Invalid invite link. Missing encryption key (#).');
     } catch {
-      // Not a URL
+      setJoinError('Please paste a valid, full URL invite link.');
     }
-
-    input = input.toUpperCase();
-    if (input.length !== 6) {
-      setJoinError('Invalid room code or link.');
-      return;
-    }
-    navigate(`/room/${input}`);
   };
 
 
@@ -146,19 +140,18 @@ export default function Home() {
             <Link className="icon" size={20} style={{ color: 'var(--accent-blue)' }} />
             Join a Room
           </h2>
-          <p>Enter a room code to join an existing conversation.</p>
+          <p>Paste an invite link to join an existing secure conversation.</p>
           <form onSubmit={handleJoin}>
             <div className="form-group">
-              <label htmlFor="join-code">Room Code</label>
+              <label htmlFor="join-code">Invite Link</label>
               <input
                 id="join-code"
                 className="input-field"
                 type="text"
-                placeholder="e.g. AB3XYZ"
+                placeholder="e.g. http://.../room/XYZ123#key"
                 value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                maxLength={6}
-                style={{ letterSpacing: '0.15em', fontWeight: 600 }}
+                onChange={(e) => setJoinCode(e.target.value)}
+                style={{ fontWeight: 500 }}
               />
             </div>
             <button
