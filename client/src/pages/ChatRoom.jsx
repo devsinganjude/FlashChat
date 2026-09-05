@@ -35,6 +35,8 @@ export default function ChatRoom() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [isGhostMode, setIsGhostMode] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   const messagesEndRef = useRef(null);
@@ -77,27 +79,67 @@ export default function ChatRoom() {
     }, 0);
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const processFile = (file) => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
       alert('File is too large. Maximum size is 5MB.');
-      e.target.value = '';
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
+    setIsUploading(true);
+
     const reader = new FileReader();
-    reader.onload = () => {
-      sendFile(reader.result, file.name, file.type, isGhostMode);
-      // If there is text in the input, send it as a separate message right after
-      if (inputText.trim()) {
-        sendMessage(inputText, isGhostMode);
-        setInputText('');
+    reader.onload = async () => {
+      try {
+        await sendFile(reader.result, file.name, file.type, isGhostMode);
+        // If there is text in the input, send it as a separate message right after
+        if (inputText.trim()) {
+          sendMessage(inputText, isGhostMode);
+          setInputText('');
+        }
+      } catch (err) {
+        console.error('Upload failed:', err);
+        alert('Failed to upload file.');
+      } finally {
+        setIsUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
       }
     };
     reader.readAsDataURL(file);
-    e.target.value = '';
+  };
+
+  const handleFileChange = (e) => {
+    processFile(e.target.files[0]);
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -195,7 +237,24 @@ export default function ChatRoom() {
   const otherTyping = typingUsers.filter((u) => u.userId !== socketId);
 
   return (
-    <div className="chat-layout">
+    <div 
+      className="chat-layout"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="drag-overlay">
+          <div className="drag-glass-card">
+            <div className="drag-icon-wrapper">
+              <Plus size={48} className="drag-icon" />
+            </div>
+            <h2 className="drag-title">Drop to Upload</h2>
+            <p className="drag-subtitle">Release your media here to send instantly</p>
+          </div>
+        </div>
+      )}
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -285,14 +344,15 @@ export default function ChatRoom() {
 
         <div className="chat-input-area floating">
           <form className="chat-input-container" onSubmit={handleSend}>
-            <label className="icon-action-btn" title="Attach File" style={{ cursor: 'pointer' }}>
+            <label className="icon-action-btn" title="Attach File" style={{ cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.7 : 1 }}>
               <input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
+                disabled={isUploading}
               />
-              <Plus size={24} />
+              {isUploading ? <Loader2 size={24} className="spinner" style={{ animation: 'spin 2s linear infinite' }} /> : <Plus size={24} />}
             </label>
             
             <div className="chat-input-pill">
